@@ -15,8 +15,37 @@ class Database:
             db_data = model(**data)
         return db_data
 
+    def _get_or_create_comments(self, session, data):
+        result = []
+
+        for comment in data:
+            comment_author = self._get_or_create(
+                session,
+                models.Author,
+                models.Author.url,
+                comment["comment"]["user"]["url"],
+                name = comment["comment"]["user"]["full_name"],
+                url = comment["comment"]["user"]["url"]
+            )
+            db_comment = self._get_or_create(
+                session,
+                models.Comment,
+                models.Comment.id,
+                comment["comment"]["id"],
+                **comment["comment"],
+                author=comment_author,
+            )
+
+            result.append(db_comment)
+            result.extend(
+                self._get_or_create(session, comment["comment"]["children"])
+            )
+
+        return result
+
     def create_post(self, data):
         session = self.maker()
+        comments = self._get_or_create(session, data["comments"])
         author = self._get_or_create(session,
                                      models.Author,
                                      models.Author.url,

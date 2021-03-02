@@ -21,6 +21,11 @@ class GbBlogParse:
         soup = bs4.BeautifulSoup(resp.text, "lxml")
         return soup
 
+    def _get_comments(self, post_id):
+        api_path = f"/api/v2/comments?commentable_type=Post&commentable_id={post_id}&order=desc"
+        response = self._get_response(urljoin(self.start_url, api_path))
+        data = response.json()
+        return data
 
     def __create_task(self, url, callback, tag_list):
         for link in set(urljoin(url, href.attrs.get("href"))
@@ -51,6 +56,8 @@ class GbBlogParse:
                         },
             "tags": [{"name": a_tag.text, "url": urljoin(url, a_tag.attrs.get('href'))}
                      for a_tag in soup.find_all("a", attrs={"class": "small"})],
+
+            "comments": self._get_comments(soup.find("comments").attrs.get("commentable-id")),
             }
         return data
 
